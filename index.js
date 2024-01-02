@@ -1,30 +1,91 @@
-const express = require('express');
+const express =require ('express')
+const cors = require ('cors')
 const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const userRoutes = require('./routes/userRoutes');
-const cors=require('cors')
-
-const app = express();
-const PORT = process.env.PORT || 6000;
 
 
 
+const app =express()
+app.use(cors())
+app.use(express.json())
 
-app.use(express())
-app.use (express.json())
-app.use(cors());
-app.use('/user',require('./routes/userRoutes'))
-const MONGODB_URI = 'mongodb://127.0.0.1:27017/bmc';
+const PORT = process.env.PORT || 8080
+//schema
 
-// Connect to MongoDB (without unsupported options)
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Error connecting to MongoDB:', err));
+const schemaData = mongoose.Schema({
+    name : String,
+    email : String,
+    mobile : String,
+    
+}, {
+    timestamps : true 
+})
 
-app.use(bodyParser.json());
 
-// Routes
-app.use('/api/user', userRoutes);
+const userModel = mongoose.model("user", schemaData)
 
-// Sta12334rt the server
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+//read
+//http://localhost:8080/
+app.get("/",async(req,res)=> {
+    const data = await userModel.find({})
+    
+    res.json({success : true , data : data})
+})
+
+ //create data // save data in mongo db
+ //http://localhost:8080/create
+ /*
+ {
+    name,
+    email,
+    mobile
+ }
+
+ */
+ app.post("/create",async(req, res)=> {
+    console.log(req.body)
+    const data = new userModel (req.body)
+    await data.save()
+
+    res.send({success: true, message : "data saved succcessfully" , data : data})
+ })
+ //update data
+ //http://localhost:8080/update
+ /**
+  * {
+  *  id :"",
+  * name :"",
+  * email :"",
+  * mobile : ""
+  * }
+  
+ */
+app.put("/update", async(req,res)=>{
+    console.log(req.body)
+    const {_id,...rest}= req.body
+    console.log(rest)
+    const data = await userModel.updateOne({_id : _id},rest)
+    res.send({success:true , message: "data updated successfully" , data : data})
+})
+
+//delete api
+//http://localhost:8080/delete/id
+
+app.delete("/delete/:id", async(req,res)=>{
+    const id =req.params.id
+    console.log(id)
+    const data =await userModel.deleteOne({_id : id})
+    res.send({success:true , message: "data deleted successfully" , data : data})
+
+  
+})
+
+
+ 
+mongoose.connect("mongodb://127.0.0.1:27017/crudoperation")
+.then(()=>{
+    console.log("connect to DB")
+    app.listen(PORT,()=>console.log("Server is running"))
+})
+.catch((err)=>console.log(err))
+
+
